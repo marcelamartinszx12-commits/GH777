@@ -13,7 +13,7 @@ jobs:
       - name: Set up Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '14.3' # Versão compatível com o projeto 3105
+          xcode-version: '15.0' # Versão compatível com o projeto 3105
 
       - name: Build and Archive
         run: |
