@@ -78,7 +78,7 @@ struct ContentView: View {
     }
 
     func validateKey() {
-        if let days = validKeys[userKey] {
+        if validKeys[userKey] != nil {
             UserDefaults.standard.set(userKey, forKey: "saved_key")
             UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "activation_date")
             isAuthenticated = true
@@ -90,15 +90,24 @@ struct ContentView: View {
     }
 
     func checkSubscriptionStatus() {
+        // Correção do erro: Lendo a key primeiro
         guard let savedKey = UserDefaults.standard.string(forKey: "saved_key"),
-              let activationTimestamp = UserDefaults.standard.double(forKey: "activation_date"),
               let daysLimit = validKeys[savedKey] else {
             isAuthenticated = false
             return
         }
 
+        // Pegando a data de forma simples (sem o guard let que causava erro)
+        let activationTimestamp = UserDefaults.standard.double(forKey: "activation_date")
+        
         if daysLimit == -1 {
             isAuthenticated = true
+            return
+        }
+
+        // Se a data for 0, significa que nunca foi ativado corretamente
+        if activationTimestamp == 0 {
+            isAuthenticated = false
             return
         }
 
