@@ -15,7 +15,6 @@ jobs:
           SCHEME=$(xcodebuild -list -project ThreeOneOSFive.xcodeproj | grep -A 1 "Schemes" | grep -v "Schemes" | tr -d ' ')
           echo "O Scheme detectado foi: $SCHEME"
           
-          # Adicionado comando para ignorar a assinatura (CODE_SIGNING_ALLOWED=NO)
           xcodebuild archive \
             -project ThreeOneOSFive.xcodeproj \
             -scheme "$SCHEME" \
@@ -26,10 +25,24 @@ jobs:
 
       - name: Export IPA
         run: |
+          # Criando um arquivo de opções simplificado na hora para evitar conflitos de Team
+          echo '<?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>ad-hoc</string>
+              <key>signingStyle</key>
+              <string>manual</string>
+          </dict>
+          </plist>' > exportOptions.plist
+
           xcodebuild -exportArchive \
             -archivePath ThreeOneOSFive.xcarchive \
             -exportPath ThreeOneOSFive_IPA \
-            -exportOptionsPlist exportOptions.plist
+            -exportOptionsPlist exportOptions.plist \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_IDENTITY=""
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
