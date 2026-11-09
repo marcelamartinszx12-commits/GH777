@@ -1,208 +1,172 @@
 import SwiftUI
-import UIKit
 
 struct ContentView: View {
-    @Environment(\.appLanguage) private var language
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @EnvironmentObject private var patchDraftCoordinator: PatchDraftCoordinator
-    @EnvironmentObject private var patchStore: PatchProjectStore
-    @EnvironmentObject private var repositoryStore: PackageRepositoryStore
-    @AppStorage(FeatureVisibility.developerModeStorageKey)
-    private var developerModeEnabled = false
-    @State private var tabNavigation: AppTabNavigationState
-    @State private var showSettings = false
-    @State private var showLogs = false
+    @State private var isAuthenticated = false
+    @State private var userKey = ""
+    @State private var errorMessage = ""
     
-    // AQUI ESTÁ A SUA FOTO CONFIGURADA
-    @State private var backgroundImageName: String? = "fundo_gh777"
-
-    init() {
-#if targetEnvironment(simulator)
-        let arguments = ProcessInfo.processInfo.arguments
-        let initialTab: Int
-        if arguments.contains("--simulate-new-tab") {
-            initialTab = 1
-        } else if arguments.contains("--simulate-sources-tab") {
-            initialTab = 2
-        } else if arguments.contains("--simulate-installed-tab")
-                    || arguments.contains("--simulate-patch-tab")
-                    || arguments.contains("--simulate-wallpaper-tab") {
-            initialTab = 3
-        } else if arguments.contains("--simulate-files-tab") {
-            initialTab = 4
-        } else if arguments.contains("--simulate-search-tab") {
-            initialTab = 5
-        } else {
-            initialTab = 3 
-        }
-        _tabNavigation = State(initialValue: AppTabNavigationState(selectedTab: initialTab))
-        _showSettings = State(
-            initialValue: arguments.contains("--simulate-settings")
-        )
-#else
-        _tabNavigation = State(initialValue: AppTabNavigationState(selectedTab: 3))
-#endif
-    }
+    // Dicionário de Keys e seus prazos em dias
+    // Admin tem valor -1 para indicar tempo permanente
+    let validKeys: [String: Int] = [
+        "GH777-1DAY": 1,
+        "GH777-3DAYS": 3,
+        "GH777-7DAYS": 7,
+        "GH777-15DAYS": 15,
+        "GH777-30DAYS": 30,
+        "GH777-ADMIN": -1
+    ]
 
     var body: some View {
         ZStack {
-            // Camada da Imagem de Fundo
-            if let imageName = backgroundImageName {
-                Image(imageName)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .ignoresSafeArea()
+            Image("fundo_gh777")
+                .resizable()
+                .scaledToFill()
+                .ignoresSafeArea()
+
+            if isAuthenticated {
+                MainAppView()
+            } else {
+                LoginView()
             }
-            
-            // Camada da Interface
-            Group {
-                if horizontalSizeClass == .regular {
-                    regularLayout
-                } else {
-                    compactLayout
-                }
-            }
-        }
-        .tint(AppTheme.accent)
-        .imageScale(.small)
-        .onChange(of: patchDraftCoordinator.request?.id) { requestID in
-            if requestID != nil { tabNavigation.select(AppSection.installed.rawValue) }
-        }
-        .onChange(of: patchDraftCoordinator.importRequest?.id) { requestID in
-            if requestID != nil { tabNavigation.select(AppSection.installed.rawValue) }
-        }
-        .onChange(of: developerModeEnabled) { _ in
-            tabNavigation.reconcileSelection(with: featureVisibility)
         }
         .onAppear {
-            tabNavigation.reconcileSelection(with: featureVisibility)
-        }
-        .sheet(isPresented: $showSettings) { SettingsView() }
-        .sheet(isPresented: $showLogs) { LogView() }
-        .patchStorePresentation(patchStore)
-        .repositoryStorePresentation(repositoryStore, patchStore: patchStore)
-    }
-
-    private var compactLayout: some View {
-        TabView(selection: tabSelection) {
-            sectionContent(.installed)
-                .tabItem {
-                    CompactTabLabel(
-                        title: language.text(AppSection.installed.titleKey),
-                        systemImage: AppSection.installed.systemImage
-                    )
-                }
-                .tag(AppSection.installed.rawValue)
+            checkSubscriptionStatus()
         }
     }
 
-    private var regularLayout: some View {
-        NavigationSplitView {
-            List {
-                Button {
-                    withAnimation(.easeInOut(duration: 0.18)) {
-                        tabNavigation.select(AppSection.installed.rawValue)
-                    }
-                } label: {
-                    Label(language.text(AppSection.installed.titleKey), systemImage: AppSection.installed.systemImage)
-                        .fontWeight(.semibold)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .contentShape(Rectangle())
+    @ViewBuilder
+    func LoginView() -> some View {
+        VStack(spacing: 20) {
+            Spacer()
+            
+            Text("GH777 EXTERNAL")
+                .font(.system(size: 32, weight: .bold, design: .monospaced))
+                .foregroundColor(.white)
+                .shadow(radius: 10)
+
+            VStack(spacing: 15) {
+                TextField("Insira sua Key de Acesso", text: $userKey)
+                    .padding()
+                    .background(Color.black.opacity(0.6))
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+                    .multilineTextAlignment(.center)
+                    .autocapitalization(.none)
+                    .disableAutocorrection(true)
+                    .keyboardType(.asciiCapable)
+
+                if !errorMessage.isEmpty {
+                    Text(errorMessage)
+                        .foregroundColor(.red)
+                        .font(.caption)
+                        .bold()
                 }
-                .buttonStyle(.plain)
-                .listRowBackground(AppTheme.accent.opacity(0.14))
+
+                Button(action: {
+                    validateKey()
+                }) {
+                    Text("ENTRAR")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(Color.orange.opacity(0.8))
+                        .cornerRadius(12)
+                        .shadow(radius: 5)
+                }
             }
-            .navigationTitle("GH777 EXTERNAL")
-            .navigationSplitViewColumnWidth(min: 210, ideal: 240, max: 300)
-        } detail: {
-            sectionContent(.installed)
-                .id(AppSection.installed.rawValue)
-        }
-        .navigationSplitViewStyle(.balanced)
-    }
-
-    @ViewBuilder
-    private func sectionContent(_ section: AppSection) -> some View {
-        switch section {
-        case .installed:
-            PatchProjectsView(
-                onOpenSettings: openSettings,
-                onOpenLogs: openLogs
-            )
-        default:
-            Text("Seção Indisponível")
+            .padding(.horizontal, 40)
+            
+            Spacer()
         }
     }
 
-    private var tabSelection: Binding<Int> {
-        Binding(
-            get: { tabNavigation.selectedTab },
-            set: { tabNavigation.select($0) }
-        )
-    }
-
-    private var featureVisibility: FeatureVisibility {
-        FeatureVisibility(developerModeEnabled: developerModeActive)
-    }
-
-    private var developerModeActive: Bool {
-#if targetEnvironment(simulator)
-        developerModeEnabled
-            || ProcessInfo.processInfo.arguments.contains("--simulate-developer-mode")
-            || ProcessInfo.processInfo.arguments.contains("--simulate-files-tab")
-#else
-        developerModeEnabled
-#endif
-    }
-
-    private func openSettings() {
-        showSettings = true
-    }
-
-    private func openLogs() {
-        showLogs = true
-    }
-}
-
-private struct CompactTabLabel: View {
-    let title: String
-    let systemImage: String
-
-    @ViewBuilder
-    var body: some View {
-        if let image = UIImage(
-            systemName: systemImage,
-            withConfiguration: UIImage.SymbolConfiguration(pointSize: 17, weight: .medium)
-        )?.withRenderingMode(.alwaysTemplate) {
-            Image(uiImage: image)
+    func validateKey() {
+        if let days = validKeys[userKey] {
+            // Salva a key usada e a data de ativação
+            UserDefaults.standard.set(userKey, forKey: "saved_key")
+            UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "activation_date")
+            
+            isAuthenticated = true
+            errorMessage = ""
         } else {
-            Image(systemName: systemImage)
-                .font(.system(size: 17, weight: .medium))
+            errorMessage = "Key inválida! Tente novamente."
+            userKey = ""
         }
-        Text(title)
+    }
+
+    func checkSubscriptionStatus() {
+        guard let savedKey = UserDefaults.standard.string(forKey: "saved_key"),
+              let activationTimestamp = UserDefaults.standard.double(forKey: "activation_date"),
+              let daysLimit = validKeys[savedKey] else {
+            isAuthenticated = false
+            return
+        }
+
+        // Admin (-1) tem acesso permanente
+        if daysLimit == -1 {
+            isAuthenticated = true
+            return
+        }
+
+        let activationDate = Date(timeIntervalSince1970: activationTimestamp)
+        let currentDate = Date()
+        
+        // Calcula a diferença em segundos e converte para dias
+        let diffInSeconds = currentDate.timeIntervalSince(activationDate)
+        let diffInDays = diffInSeconds / (60 * 60 * 24)
+
+        if diffInDays > Double(daysLimit) {
+            // Tempo expirou: limpa os dados e desloga
+            UserDefaults.standard.removeObject(forKey: "saved_key")
+            UserDefaults.standard.removeObject(forKey: "activation_date")
+            isAuthenticated = false
+        } else {
+            isAuthenticated = true
+        }
     }
 }
 
-private extension AppSection {
-    var titleKey: String {
-        switch self {
-        case .home: return "tab.home"
-        case .new: return "tab.new"
-        case .sources: return "tab.sources"
-        case .installed: return "tab.installed"
-        case .files: return "tab.files"
-        case .search: return "tab.search"
-        }
-    }
+struct MainAppView: View {
+    @State private var selectedTab = 1
 
-    var systemImage: String {
-        switch self {
-        case .home: return "house.fill"
-        case .new: return "clock.fill"
-        case .sources: return "shippingbox.fill"
-        case .installed: return "tray.full.fill"
-        case .files: return "folder.fill"
-        case .search: return "magnifyingglass"
+    var body: some View {
+        TabView(selection: $selectedTab) {
+            Text("Home View")
+                .tabItem { Label("Home", systemImage: "house") }
+                .tag(0)
+
+            InstalledView()
+                .tabItem { Label("Installed", systemImage: "cube.box") }
+                .tag(1)
         }
+        .accentColor(.orange)
+    }
+}
+
+struct InstalledView: View {
+    var body: some View {
+        VStack {
+            Text("Installed")
+                .font(.title)
+                .foregroundColor(.white)
+            Spacer()
+            Image(systemName: "cube.box")
+                .resizable()
+                .frame(width: 50, height: 50)
+                .foregroundColor(.orange)
+            Text("Nothing Installed")
+                .font(.headline)
+                .foregroundColor(.white)
+            Button("New Patch") { }
+                .padding()
+                .background(Color.orange.opacity(0.8))
+                .foregroundColor(.white)
+                .cornerRadius(10)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black.opacity(0.3))
+        .ignoresSafeArea()
     }
 }
