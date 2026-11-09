@@ -169,15 +169,80 @@ struct InstalledView: View {
 
 struct FilesView: View {
     var body: some View {
+        FileBrowserView()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.black.opacity(0.3))
+            .ignoresSafeArea()
+    }
+}
+
+struct FileBrowserView: View {
+    @State private var currentPath: String = "/"
+    @State private var items: [URL] = []
+
+    var body: some View {
         VStack {
-            Text("Resetar Key").font(.title).foregroundColor(.white)
-            Spacer()
-            Image(systemName: "folder.fill").resizable().frame(width: 50, height: 50).foregroundColor(.orange)
-            Text("Arquivos de Sistema").font(.headline).foregroundColor(.white)
-            Spacer()
+            HStack {
+                if currentPath != "/" {
+                    Button(action: { goBack() }) {
+                        Image(systemName: "chevron.left")
+                            .foregroundColor(.orange)
+                            .padding()
+                    }
+                }
+                Text(currentPath)
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.leading, 20)
+                Spacer()
+            }
+            .padding(.top, 50)
+            .background(Color.black.opacity(0.5))
+
+            List(items, id: \.self) {
+                item in
+                HStack {
+                    Image(systemName: item.hasDirectoryPath ? "folder" : "doc")
+                        .foregroundColor(.orange)
+                    Text(item.lastPathComponent)
+                        .foregroundColor(.white)
+                }
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    if item.hasDirectoryPath {
+                        navigateTo(item.path)
+                    }
+                }
+            }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .background(Color.clear)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.black.opacity(0.3))
-        .ignoresSafeArea()
+        .onAppear { loadFiles() }
+    }
+
+    func loadFiles() {
+        let fileManager = FileManager.default
+        do {
+            let urls = try fileManager.contentsOfDirectory(atPath: currentPath)
+            items = urls.map { URL(fileURLWithPath: (currentPath as NSString).appendingPathComponent($0)) }
+            // Ordenar pastas primeiro
+            items.sort { $0.hasDirectoryPath && !$1.hasDirectoryPath }
+        } catch {
+            print("Erro ao carregar arquivos: \(error)")
+        }
+    }
+
+    func navigateTo(_ path: String) {
+        currentPath = path
+        loadFiles()
+    }
+
+    func goBack() {
+        let url = URL(fileURLWithPath: currentPath)
+        currentPath = url.deletingLastPathComponent().path
+        if currentPath.isEmpty { currentPath = "/" }
+        loadFiles()
     }
 }
