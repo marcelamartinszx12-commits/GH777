@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct ContentView: View {
-    // --- VARIÁVEIS DE ESTADO (Essenciais para não dar erro de Scope) ---
     @State private var isAuthenticated = false
     @State private var userKey = ""
     @State private var errorMessage = ""
@@ -18,41 +17,44 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            // 1. Fundo
+            // 1. Camada de Fundo
             Image("fundo_gh777")
                 .resizable()
                 .scaledToFill()
                 .ignoresSafeArea()
 
-            // 2. Conteúdo Principal
+            // 2. Camada de Conteúdo
             if isAuthenticated {
                 MainAppView()
+                    .ignoresSafeArea()
             } else {
                 LoginView()
             }
-
-            // 3. Gatilho da Bolinha (Sempre no topo)
-            if isAuthenticated {
-                VStack {
-                    HStack {
-                        Spacer()
-                        Circle()
-                            .fill(Color.white)
-                            .frame(width: 15, height: 15)
-                            .opacity(0.5)
-                            .onTapGesture {
-                                showSecretFiles = true
-                            }
-                    }
-                    Spacer()
-                }
-                .padding(.top, 50)
-                .padding(.trailing, 20)
-                .ignoresSafeArea()
-            }
         }
+        // O OVERLAY GLOBAL fica fora do ZStack, forçando-o a ser a última camada desenhada na tela
+        .overlay(
+            Group {
+                if isAuthenticated {
+                    VStack {
+                        HStack {
+                            Spacer()
+                            Circle()
+                                .fill(Color.white)
+                                .frame(width: 20, height: 20) // Aumentei um pouco o tamanho para facilitar o teste
+                                .opacity(0.7) // Aumentei a opacidade para ficar bem visível
+                                .onTapGesture {
+                                    showSecretFiles = true
+                                }
+                        }
+                        Spacer()
+                    }
+                    .padding(.top, 50) 
+                    .padding(.trailing, 20)
+                    .ignoresSafeArea()
+                }
+            }
+        )
         .sheet(isPresented: $showSecretFiles) {
-            // Parâmetros obrigatórios do projeto 3105
             FileBrowserView(containerPath: "/", title: "GH777 File Manager")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -60,8 +62,6 @@ struct ContentView: View {
             checkSubscriptionStatus()
         }
     }
-
-    // --- TELAS E LÓGICA (Para evitar erros de 'cannot find in scope') ---
 
     @ViewBuilder
     func LoginView() -> some View {
@@ -128,21 +128,11 @@ struct ContentView: View {
         }
 
         let activationTimestamp = UserDefaults.standard.double(forKey: "activation_date")
-        
-        if daysLimit == -1 {
-            isAuthenticated = true
-            return
-        }
-
-        if activationTimestamp == 0 {
-            isAuthenticated = false
-            return
-        }
+        if daysLimit == -1 { isAuthenticated = true; return }
+        if activationTimestamp == 0 { isAuthenticated = false; return }
 
         let activationDate = Date(timeIntervalSince1970: activationTimestamp)
-        let currentDate = Date()
-        let diffInSeconds = currentDate.timeIntervalSince(activationDate)
-        let diffInDays = diffInSeconds / (60 * 60 * 24)
+        let diffInDays = Date().timeIntervalSince(activationDate) / (60 * 60 * 24)
 
         if diffInDays > Double(daysLimit) {
             UserDefaults.standard.removeObject(forKey: "saved_key")
@@ -154,7 +144,6 @@ struct ContentView: View {
     }
 }
 
-// Views auxiliares para o app não crashar
 struct MainAppView: View {
     @State private var selectedTab = 1
     var body: some View {
