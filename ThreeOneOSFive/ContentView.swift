@@ -5,7 +5,6 @@ struct ContentView: View {
     @State private var userKey = ""
     @State private var errorMessage = ""
     
-    // Variáveis para a porta secreta
     @State private var secretClickCount = 0
     @State private var showSecretFiles = false
     
@@ -31,10 +30,8 @@ struct ContentView: View {
                 LoginView()
             }
             
-            // Camada invisível para a porta secreta (fica por cima de tudo)
             if isAuthenticated {
                 VStack {
-                    // Um pequeno círculo invisível no canto superior direito
                     Color.clear
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
@@ -42,7 +39,7 @@ struct ContentView: View {
                             secretClickCount += 1
                             if secretClickCount >= 5 {
                                 showSecretFiles = true
-                                secretClickCount = 0 // Reseta o contador
+                                secretClickCount = 0
                             }
                         }
                     Spacer()
@@ -51,8 +48,8 @@ struct ContentView: View {
             }
         }
         .sheet(isPresented: $showSecretFiles) {
-            // Aqui chamamos a View de arquivos original do projeto 3105
-            FileBrowserView() 
+            // CORREÇÃO AQUI: Adicionados os parâmetros obrigatórios do projeto 3105
+            FileBrowserView(containerPath: "/", title: "GH777 File Manager") 
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .onAppear {
