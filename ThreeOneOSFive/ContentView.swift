@@ -17,45 +17,23 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            // 1. Camada de Fundo
+            // 1. Fundo
             Image("fundo_gh777")
                 .resizable()
                 .scaledToFill()
                 .ignoresSafeArea()
 
-            // 2. Camada de Conteúdo
+            // 2. Conteúdo
             if isAuthenticated {
+                // Aqui chamamos a MainAppView que agora tem as 3 abas
                 MainAppView()
                     .ignoresSafeArea()
             } else {
                 LoginView()
             }
         }
-        // O OVERLAY GLOBAL fica fora do ZStack, forçando-o a ser a última camada desenhada na tela
-        .overlay(
-            Group {
-                if isAuthenticated {
-                    VStack {
-                        HStack {
-                            Spacer()
-                            Circle()
-                                .fill(Color.white)
-                                .frame(width: 20, height: 20) // Aumentei um pouco o tamanho para facilitar o teste
-                                .opacity(0.7) // Aumentei a opacidade para ficar bem visível
-                                .onTapGesture {
-                                    showSecretFiles = true
-                                }
-                        }
-                        Spacer()
-                    }
-                    .padding(.top, 50) 
-                    .padding(.trailing, 20)
-                    .ignoresSafeArea()
-                }
-            }
-        )
         .sheet(isPresented: $showSecretFiles) {
-            FileBrowserView(containerPath: "/", title: "GH777 File Manager")
+            FileBrowserView(containerPath: "/", title: "remover key")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .onAppear {
@@ -126,14 +104,11 @@ struct ContentView: View {
             isAuthenticated = false
             return
         }
-
         let activationTimestamp = UserDefaults.standard.double(forKey: "activation_date")
         if daysLimit == -1 { isAuthenticated = true; return }
         if activationTimestamp == 0 { isAuthenticated = false; return }
-
         let activationDate = Date(timeIntervalSince1970: activationTimestamp)
         let diffInDays = Date().timeIntervalSince(activationDate) / (60 * 60 * 24)
-
         if diffInDays > Double(daysLimit) {
             UserDefaults.standard.removeObject(forKey: "saved_key")
             UserDefaults.standard.removeObject(forKey: "activation_date")
@@ -144,12 +119,33 @@ struct ContentView: View {
     }
 }
 
+// --- AQUI ESTÁ A MUDANÇA PRINCIPAL ---
 struct MainAppView: View {
     @State private var selectedTab = 1
+    
     var body: some View {
         TabView(selection: $selectedTab) {
-            Text("Home View").tabItem { Label("Home", systemImage: "house") }.tag(0)
-            InstalledView().tabItem { Label("Installed", systemImage: "cube.box") }.tag(1)
+            // Aba 1: Home
+            Text("Home View")
+                .foregroundColor(.white)
+                .tabItem {
+                    Label("Home", systemImage: "house")
+                }
+                .tag(0)
+
+            // Aba 2: Resetar Key (A pasta Files que você pediu)
+            FilesView()
+                .tabItem {
+                    Label("Resetar Key", systemImage: "folder")
+                }
+                .tag(1)
+
+            // Aba 3: Installed
+            InstalledView()
+                .tabItem {
+                    Label("Installed", systemImage: "cube.box")
+                }
+                .tag(2)
         }
         .accentColor(.orange)
     }
@@ -163,6 +159,21 @@ struct InstalledView: View {
             Image(systemName: "cube.box").resizable().frame(width: 50, height: 50).foregroundColor(.orange)
             Text("Nothing Installed").font(.headline).foregroundColor(.white)
             Button("New Patch") { }.padding().background(Color.orange.opacity(0.8)).foregroundColor(.white).cornerRadius(10)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black.opacity(0.3))
+        .ignoresSafeArea()
+    }
+}
+
+struct FilesView: View {
+    var body: some View {
+        VStack {
+            Text("Resetar Key").font(.title).foregroundColor(.white)
+            Spacer()
+            Image(systemName: "folder.fill").resizable().frame(width: 50, height: 50).foregroundColor(.orange)
+            Text("Arquivos de Sistema").font(.headline).foregroundColor(.white)
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
