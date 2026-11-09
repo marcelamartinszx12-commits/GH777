@@ -30,14 +30,15 @@ struct ContentView: View {
         } else if arguments.contains("--simulate-search-tab") {
             initialTab = 5
         } else {
-            initialTab = 0
+            initialTab = 3 // Inicia na aba Installed no simulador
         }
         _tabNavigation = State(initialValue: AppTabNavigationState(selectedTab: initialTab))
         _showSettings = State(
             initialValue: arguments.contains("--simulate-settings")
         )
 #else
-        _tabNavigation = State(initialValue: AppTabNavigationState())
+        // Força a iniciar na aba Installed (índice 3) no iPhone real
+        _tabNavigation = State(initialValue: AppTabNavigationState(selectedTab: 3))
 #endif
     }
 
@@ -71,49 +72,40 @@ struct ContentView: View {
 
     private var compactLayout: some View {
         TabView(selection: tabSelection) {
-            ForEach(featureVisibility.visibleSections) { section in
-                sectionContent(section)
-                    .tabItem {
-                        CompactTabLabel(
-                            title: language.text(section.titleKey),
-                            systemImage: section.systemImage
-                        )
-                    }
-                    .tag(section.rawValue)
-            }
+            // Exibe APENAS a aba Installed
+            sectionContent(.installed)
+                .tabItem {
+                    CompactTabLabel(
+                        title: language.text(AppSection.installed.titleKey),
+                        systemImage: AppSection.installed.systemImage
+                    )
+                }
+                .tag(AppSection.installed.rawValue)
         }
     }
 
     private var regularLayout: some View {
         NavigationSplitView {
             List {
-                ForEach(featureVisibility.visibleSections) { section in
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.18)) {
-                            tabNavigation.select(section.rawValue)
-                        }
-                    } label: {
-                        Label(language.text(section.titleKey), systemImage: section.systemImage)
-                            .fontWeight(section.rawValue == tabNavigation.selectedTab ? .semibold : .regular)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .contentShape(Rectangle())
+                // Exibe APENAS a aba Installed na barra lateral
+                Button {
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        tabNavigation.select(AppSection.installed.rawValue)
                     }
-                    .buttonStyle(.plain)
-                    .listRowBackground(
-                        section.rawValue == tabNavigation.selectedTab
-                            ? AppTheme.accent.opacity(0.14)
-                            : Color.clear
-                    )
-                    .accessibilityAddTraits(
-                        section.rawValue == tabNavigation.selectedTab ? .isSelected : []
-                    )
+                } label: {
+                    Label(language.text(AppSection.installed.titleKey), systemImage: AppSection.installed.systemImage)
+                        .fontWeight(.semibold)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .listRowBackground(AppTheme.accent.opacity(0.14))
             }
-            .navigationTitle("3105")
+            .navigationTitle("GH777 EXTERNAL")
             .navigationSplitViewColumnWidth(min: 210, ideal: 240, max: 300)
         } detail: {
-            sectionContent(selectedVisibleSection)
-                .id(selectedVisibleSection.rawValue)
+            sectionContent(.installed)
+                .id(AppSection.installed.rawValue)
         }
         .navigationSplitViewStyle(.balanced)
     }
@@ -121,37 +113,15 @@ struct ContentView: View {
     @ViewBuilder
     private func sectionContent(_ section: AppSection) -> some View {
         switch section {
-        case .home:
-            RepositoryHomeView(
-                onOpenSettings: openSettings,
-                onOpenLogs: openLogs
-            )
-        case .new:
-            RepositoryNewView(
-                onOpenSettings: openSettings,
-                onOpenLogs: openLogs
-            )
-        case .sources:
-            RepositorySourcesView(
-                onOpenSettings: openSettings,
-                onOpenLogs: openLogs
-            )
         case .installed:
             PatchProjectsView(
                 onOpenSettings: openSettings,
                 onOpenLogs: openLogs
             )
-        case .files:
-            AppDataBrowserView(
-                tabSession: filesTabSession,
-                onOpenSettings: openSettings,
-                onOpenLogs: openLogs
-            )
-        case .search:
-            RepositorySearchView(
-                onOpenSettings: openSettings,
-                onOpenLogs: openLogs
-            )
+        default:
+            // Mantemos os outros cases para não dar erro de compilação, 
+            // mas eles nunca serão chamados porque filtramos acima.
+            Text("Seção Indisponível")
         }
     }
 
@@ -159,13 +129,6 @@ struct ContentView: View {
         Binding(
             get: { tabNavigation.selectedTab },
             set: { tabNavigation.select($0) }
-        )
-    }
-
-    private var filesTabSession: Binding<FilesTabSession> {
-        Binding(
-            get: { tabNavigation.filesTabs },
-            set: { tabNavigation.setFilesTabs($0) }
         )
     }
 
@@ -181,13 +144,6 @@ struct ContentView: View {
 #else
         developerModeEnabled
 #endif
-    }
-
-    private var selectedVisibleSection: AppSection {
-        let selected = AppSection(rawValue: tabNavigation.selectedTab)
-        return selected.flatMap {
-            featureVisibility.isVisible($0) ? $0 : nil
-        } ?? .home
     }
 
     private func openSettings() {
