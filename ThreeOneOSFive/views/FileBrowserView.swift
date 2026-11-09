@@ -18,7 +18,7 @@ struct FileBrowserView: View {
         self.containerPath = containerPath
         self.title = title
         // Define o caminho inicial como a pasta de documentos do app
-        _currentPath = State(initialValue: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0])
+            _currentPath = State(initialValue: URL(fileURLWithPath: containerPath))
     }
     
     var body: some View {
