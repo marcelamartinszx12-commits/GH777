@@ -12,15 +12,17 @@ jobs:
 
       - name: Build and Archive
         run: |
-          # Comando para encontrar o nome correto do scheme disponível no projeto
           SCHEME=$(xcodebuild -list -project ThreeOneOSFive.xcodeproj | grep -A 1 "Schemes" | grep -v "Schemes" | tr -d ' ')
           echo "O Scheme detectado foi: $SCHEME"
           
+          # Adicionado comando para ignorar a assinatura (CODE_SIGNING_ALLOWED=NO)
           xcodebuild archive \
             -project ThreeOneOSFive.xcodeproj \
             -scheme "$SCHEME" \
             -archivePath ThreeOneOSFive.xcarchive \
-            -sdk iphoneos
+            -sdk iphoneos \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_IDENTITY=""
 
       - name: Export IPA
         run: |
