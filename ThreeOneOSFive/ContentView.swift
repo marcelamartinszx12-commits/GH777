@@ -17,15 +17,15 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            // 1. Fundo
             Image("fundo_gh777")
                 .resizable()
                 .scaledToFill()
                 .ignoresSafeArea()
+            
+            Color.black.opacity(0.4)
+                .ignoresSafeArea()
 
-            // 2. Conteúdo
             if isAuthenticated {
-                // Aqui chamamos a MainAppView que agora tem as 3 abas
                 MainAppView()
                     .ignoresSafeArea()
             } else {
@@ -33,6 +33,7 @@ struct ContentView: View {
             }
         }
         .sheet(isPresented: $showSecretFiles) {
+            // Ajustado para usar a versão original do projeto com os parâmetros exigidos
             FileBrowserView(containerPath: "/", title: "remover key")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -43,19 +44,32 @@ struct ContentView: View {
 
     @ViewBuilder
     func LoginView() -> some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 25) {
             Spacer()
-            Text("GH777 EXTERNAL")
-                .font(.system(size: 32, weight: .bold, design: .monospaced))
-                .foregroundColor(.white)
-                .shadow(radius: 10)
+            VStack(spacing: 8) {
+                Text("GH777")
+                    .font(.system(size: 42, weight: .black, design: .monospaced))
+                    .foregroundColor(.white)
+                Text("EXTERNAL")
+                    .font(.system(size: 16, weight: .light, design: .monospaced))
+                    .foregroundColor(.orange)
+                    .tracking(5)
+            }
+            .shadow(color: .black.opacity(0.5), radius: 10, x: 0, y: 5)
 
-            VStack(spacing: 15) {
+            VStack(spacing: 20) {
                 TextField("Insira sua Key de Acesso", text: $userKey)
                     .padding()
-                    .background(Color.black.opacity(0.6))
+                    .background(
+                        RoundedRectangle(cornerRadius: 15)
+                            .fill(Color.white.opacity(0.1))
+                            .background(BlurView(style: .systemUltraThinMaterialDark))
+                    )
                     .foregroundColor(.white)
-                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 15)
+                            .stroke(Color.orange.opacity(0.5), lineWidth: 1)
+                    )
                     .multilineTextAlignment(.center)
                     .autocapitalization(.none)
                     .disableAutocorrection(true)
@@ -64,21 +78,22 @@ struct ContentView: View {
                 if !errorMessage.isEmpty {
                     Text(errorMessage)
                         .foregroundColor(.red)
-                        .font(.caption)
-                        .bold()
+                        .font(.system(size: 14, weight: .medium))
                 }
 
                 Button(action: {
                     validateKey()
                 }) {
                     Text("ENTRAR")
-                        .font(.headline)
+                        .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.white)
                         .padding()
                         .frame(maxWidth: .infinity)
-                        .background(Color.orange.opacity(0.8))
-                        .cornerRadius(12)
-                        .shadow(radius: 5)
+                        .background(
+                            LinearGradient(gradient: Gradient(colors: [Color.orange, Color.orange.opacity(0.7)]), startPoint: .top, endPoint: .bottom)
+                        )
+                        .cornerRadius(15)
+                        .shadow(color: .orange.opacity(0.4), radius: 10, x: 0, y: 5)
                 }
             }
             .padding(.horizontal, 40)
@@ -119,31 +134,27 @@ struct ContentView: View {
     }
 }
 
-// --- AQUI ESTÁ A MUDANÇA PRINCIPAL ---
 struct MainAppView: View {
     @State private var selectedTab = 1
     
     var body: some View {
         TabView(selection: $selectedTab) {
-            // Aba 1: Home
             Text("Home View")
                 .foregroundColor(.white)
                 .tabItem {
-                    Label("Home", systemImage: "house")
+                    Label("Home", systemImage: "house.fill")
                 }
                 .tag(0)
 
-            // Aba 2: Resetar Key (A pasta Files que você pediu)
             FilesView()
                 .tabItem {
-                    Label("Resetar Key", systemImage: "folder")
+                    Label("Files", systemImage: "folder.fill")
                 }
                 .tag(1)
 
-            // Aba 3: Installed
             InstalledView()
                 .tabItem {
-                    Label("Installed", systemImage: "cube.box")
+                    Label("Installed", systemImage: "cube.box.fill")
                 }
                 .tag(2)
         }
@@ -154,11 +165,31 @@ struct MainAppView: View {
 struct InstalledView: View {
     var body: some View {
         VStack {
-            Text("Installed").font(.title).foregroundColor(.white)
+            Text("Installed")
+                .font(.system(size: 28, weight: .bold))
+                .foregroundColor(.white)
+                .padding(.top, 40)
             Spacer()
-            Image(systemName: "cube.box").resizable().frame(width: 50, height: 50).foregroundColor(.orange)
-            Text("Nothing Installed").font(.headline).foregroundColor(.white)
-            Button("New Patch") { }.padding().background(Color.orange.opacity(0.8)).foregroundColor(.white).cornerRadius(10)
+            VStack(spacing: 20) {
+                Image(systemName: "cube.box")
+                    .resizable()
+                    .frame(width: 70, height: 70)
+                    .foregroundColor(.orange)
+                    .shadow(color: .orange.opacity(0.5), radius: 15)
+                Text("Nothing Installed")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundColor(.white.opacity(0.8))
+                Button(action: {}) {
+                    Text("New Patch")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .padding()
+                        .frame(width: 200)
+                        .background(Color.orange)
+                        .cornerRadius(12)
+                        .shadow(radius: 5)
+                }
+            }
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -169,80 +200,18 @@ struct InstalledView: View {
 
 struct FilesView: View {
     var body: some View {
-        FileBrowserView()
+        // Chamando a FileBrowserView original do projeto com os parâmetros corretos
+         FileBrowserView(containerPath: "/", title: "App Data / Files")
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color.black.opacity(0.3))
             .ignoresSafeArea()
     }
 }
 
-struct FileBrowserView: View {
-    @State private var currentPath: String = "/"
-    @State private var items: [URL] = []
-
-    var body: some View {
-        VStack {
-            HStack {
-                if currentPath != "/" {
-                    Button(action: { goBack() }) {
-                        Image(systemName: "chevron.left")
-                            .foregroundColor(.orange)
-                            .padding()
-                    }
-                }
-                Text(currentPath)
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.leading, 20)
-                Spacer()
-            }
-            .padding(.top, 50)
-            .background(Color.black.opacity(0.5))
-
-            List(items, id: \.self) {
-                item in
-                HStack {
-                    Image(systemName: item.hasDirectoryPath ? "folder" : "doc")
-                        .foregroundColor(.orange)
-                    Text(item.lastPathComponent)
-                        .foregroundColor(.white)
-                }
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    if item.hasDirectoryPath {
-                        navigateTo(item.path)
-                    }
-                }
-            }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .background(Color.clear)
-        }
-        .onAppear { loadFiles() }
+struct BlurView: UIViewRepresentable {
+    var style: UIBlurEffect.Style
+    func makeUIView(context: Context) -> UIVisualEffectView {
+        return UIVisualEffectView(effect: UIBlurEffect(style: style))
     }
-
-    func loadFiles() {
-        let fileManager = FileManager.default
-        do {
-            let urls = try fileManager.contentsOfDirectory(atPath: currentPath)
-            items = urls.map { URL(fileURLWithPath: (currentPath as NSString).appendingPathComponent($0)) }
-            // Ordenar pastas primeiro
-            items.sort { $0.hasDirectoryPath && !$1.hasDirectoryPath }
-        } catch {
-            print("Erro ao carregar arquivos: \(error)")
-        }
-    }
-
-    func navigateTo(_ path: String) {
-        currentPath = path
-        loadFiles()
-    }
-
-    func goBack() {
-        let url = URL(fileURLWithPath: currentPath)
-        currentPath = url.deletingLastPathComponent().path
-        if currentPath.isEmpty { currentPath = "/" }
-        loadFiles()
-    }
+    func updateUIView(_ uiView: UIVisualEffectView, context: Context) {}func updateUIView(_ uiView: UIVisualEffectView, context: Context) {}
 }
