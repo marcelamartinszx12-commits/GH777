@@ -5,7 +5,6 @@ struct ContentView: View {
     @State private var userKey = ""
     @State private var errorMessage = ""
     
-    @State private var secretClickCount = 0
     @State private var showSecretFiles = false
     
     let validKeys: [String: Int] = [
@@ -19,6 +18,7 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
+            // Imagem de fundo customizada
             Image("fundo_gh777")
                 .resizable()
                 .scaledToFill()
@@ -26,30 +26,31 @@ struct ContentView: View {
 
             if isAuthenticated {
                 MainAppView()
+                    .overlay(
+                        // Gatilho da Bolinha Branca no topo superior direito
+                        VStack {
+                            HStack {
+                                Spacer()
+                                Circle()
+                                    .fill(Color.white)
+                                    .frame(width: 15, height: 15)
+                                    .opacity(0.5) // Semi-transparente para discrição
+                                    .onTapGesture {
+                                        showSecretFiles = true
+                                    }
+                            }
+                            Spacer()
+                        }
+                        .padding(.top, 50) // Ajuste para não ficar colado na notch/estátus bar
+                        .padding(.trailing, 20)
+                    )
             } else {
                 LoginView()
             }
-            
-            if isAuthenticated {
-                VStack {
-                    Color.clear
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            secretClickCount += 1
-                            if secretClickCount >= 5 {
-                                showSecretFiles = true
-                                secretClickCount = 0
-                            }
-                        }
-                    Spacer()
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-            }
         }
         .sheet(isPresented: $showSecretFiles) {
-            // CORREÇÃO AQUI: Adicionados os parâmetros obrigatórios do projeto 3105
-            FileBrowserView(containerPath: "/", title: "GH777 File Manager") 
+            // Parâmetros obrigatórios para evitar erro de compilação no projeto 3105
+            FileBrowserView(containerPath: "/", title: "GH777 File Manager")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .onAppear {
