@@ -33,8 +33,7 @@ struct ContentView: View {
             }
         }
         .sheet(isPresented: $showSecretFiles) {
-            // Ajustado para usar a versão original do projeto com os parâmetros exigidos
-            FileBrowserView(containerPath: "/", title: "remover key")
+            FileBrowserView(containerPath: "/", title: "App Data / Files")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .onAppear {
@@ -200,8 +199,7 @@ struct InstalledView: View {
 
 struct FilesView: View {
     var body: some View {
-        // Chamando a FileBrowserView original do projeto com os parâmetros corretos
-         FileBrowserView(containerPath: "/", title: "App Data / Files")
+        FileBrowserView(containerPath: "/", title: "App Data / Files")
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color.black.opacity(0.3))
             .ignoresSafeArea()
@@ -213,5 +211,5 @@ struct BlurView: UIViewRepresentable {
     func makeUIView(context: Context) -> UIVisualEffectView {
         return UIVisualEffectView(effect: UIBlurEffect(style: style))
     }
-    func updateUIView(_ uiView: UIVisualEffectView, context: Context) {}func updateUIView(_ uiView: UIVisualEffectView, context: Context) {}
+    func updateUIView(_ uiView: UIVisualEffectView, context: Context) {}
 }
