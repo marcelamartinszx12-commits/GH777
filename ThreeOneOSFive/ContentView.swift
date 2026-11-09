@@ -12,6 +12,9 @@ struct ContentView: View {
     @State private var tabNavigation: AppTabNavigationState
     @State private var showSettings = false
     @State private var showLogs = false
+    
+    // AQUI ESTÁ A SUA FOTO CONFIGURADA
+    @State private var backgroundImageName: String? = "fundo_gh777"
 
     init() {
 #if targetEnvironment(simulator)
@@ -30,24 +33,34 @@ struct ContentView: View {
         } else if arguments.contains("--simulate-search-tab") {
             initialTab = 5
         } else {
-            initialTab = 3 // Inicia na aba Installed no simulador
+            initialTab = 3 
         }
         _tabNavigation = State(initialValue: AppTabNavigationState(selectedTab: initialTab))
         _showSettings = State(
             initialValue: arguments.contains("--simulate-settings")
         )
 #else
-        // Força a iniciar na aba Installed (índice 3) no iPhone real
         _tabNavigation = State(initialValue: AppTabNavigationState(selectedTab: 3))
 #endif
     }
 
     var body: some View {
-        Group {
-            if horizontalSizeClass == .regular {
-                regularLayout
-            } else {
-                compactLayout
+        ZStack {
+            // Camada da Imagem de Fundo
+            if let imageName = backgroundImageName {
+                Image(imageName)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .ignoresSafeArea()
+            }
+            
+            // Camada da Interface
+            Group {
+                if horizontalSizeClass == .regular {
+                    regularLayout
+                } else {
+                    compactLayout
+                }
             }
         }
         .tint(AppTheme.accent)
@@ -72,7 +85,6 @@ struct ContentView: View {
 
     private var compactLayout: some View {
         TabView(selection: tabSelection) {
-            // Exibe APENAS a aba Installed
             sectionContent(.installed)
                 .tabItem {
                     CompactTabLabel(
@@ -87,7 +99,6 @@ struct ContentView: View {
     private var regularLayout: some View {
         NavigationSplitView {
             List {
-                // Exibe APENAS a aba Installed na barra lateral
                 Button {
                     withAnimation(.easeInOut(duration: 0.18)) {
                         tabNavigation.select(AppSection.installed.rawValue)
@@ -119,8 +130,6 @@ struct ContentView: View {
                 onOpenLogs: openLogs
             )
         default:
-            // Mantemos os outros cases para não dar erro de compilação, 
-            // mas eles nunca serão chamados porque filtramos acima.
             Text("Seção Indisponível")
         }
     }
