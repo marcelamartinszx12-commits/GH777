@@ -13,25 +13,23 @@ jobs:
 
       - name: Build and Archive
         run: |
+          # Limpa o projeto para evitar lixo de builds anteriores
+          xcodebuild clean -project ThreeOneOSFive.xcodeproj -scheme "3105"
+          
+          # Tenta buildar e salva o erro em um arquivo de texto para a gente ler
           xcodebuild archive \
             -project ThreeOneOSFive.xcodeproj \
             -scheme "3105" \
             -archivePath ThreeOneOSFive.xcarchive \
             -sdk iphoneos \
             CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_IDENTITY=""
+            CODE_SIGNING_IDENTITY="" 2> build_error.txt || (cat build_error.txt && exit 1)
 
       - name: Manual IPA Packaging
         run: |
-          # 1. Localiza o arquivo .app dentro do archive
           APP_PATH=$(find ThreeOneOSFive.xcarchive -name "*.app" | head -n 1)
-          echo "App localizado em: $APP_PATH"
-
-          # 2. Cria a estrutura de pastas necessária para um IPA
           mkdir -p Payload
           cp -r "$APP_PATH" Payload/
-
-          # 3. Compacta a pasta Payload em um arquivo .zip e renomeia para .ipa
           zip -r GH777.ipa Payload
           rm -rf Payload
 
