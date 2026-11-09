@@ -12,9 +12,13 @@ jobs:
 
       - name: Build and Archive
         run: |
+          # Comando para encontrar o nome correto do scheme disponível no projeto
+          SCHEME=$(xcodebuild -list -project ThreeOneOSFive.xcodeproj | grep -A 1 "Schemes" | grep -v "Schemes" | tr -d ' ')
+          echo "O Scheme detectado foi: $SCHEME"
+          
           xcodebuild archive \
             -project ThreeOneOSFive.xcodeproj \
-            -scheme ThreeOneOSFive \
+            -scheme "$SCHEME" \
             -archivePath ThreeOneOSFive.xcarchive \
             -sdk iphoneos
 
