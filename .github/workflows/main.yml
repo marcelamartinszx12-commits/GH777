@@ -10,10 +10,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Xcode
-        uses: xcode-install/xcode-install@v1
-        # Removido xcode-version para usar a versão padrão da máquina
-
       - name: Build and Archive
         run: |
           xcodebuild archive \
