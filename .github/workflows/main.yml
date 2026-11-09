@@ -1,4 +1,4 @@
-name: build ipa
+name: Build IPA
 
 on:
   workflow_dispatch:
@@ -8,41 +8,35 @@ jobs:
     runs-on: macos-latest
 
     steps:
-      - name: checkout repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: build and archive
+      - name: Build and Archive
         run: |
-          scheme=$(xcodebuild -list -project threeoneosfive.xcodeproj | grep -a 1 "schemes" | grep -v "schemes" | tr -d ' ')
-          echo "o scheme detectado foi: $scheme"
-          
           xcodebuild archive \
-            -project threeoneosfive.xcodeproj \
-            -scheme "$scheme" \
-            -archivepath threeoneosfive.xcarchive \
+            -project ThreeOneOSFive.xcodeproj \
+            -scheme "3105" \
+            -archivePath ThreeOneOSFive.xcarchive \
             -sdk iphoneos \
-            code_signing_allowed=no \
-            code_signing_identity=""
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_IDENTITY=""
 
-      - name: manual ipa packaging
+      - name: Manual IPA Packaging
         run: |
-          # 1. localiza o arquivo .app dentro do archive
-          app_path=$(find threeoneosfive.xcarchive -name "*.app" | head -n 1)
-          echo "app localizado em: $app_path"
-          
-          # 2. cria a estrutura de pastas necessária para um ipa
-          mkdir -p payload
-          cp -r "$app_path" payload/
-          
-          # 3. compacta a pasta payload em um arquivo .zip e renomeia para .ipa
-          zip -r gh777.ipa payload
-          
-          # 4. move o arquivo para a pasta de artefatos
-          mkdir -p threeoneosfive_ipa
-          mv gh777.ipa threeoneosfive_ipa/
+          # 1. Localiza o arquivo .app dentro do archive
+          APP_PATH=$(find ThreeOneOSFive.xcarchive -name "*.app" | head -n 1)
+          echo "App localizado em: $APP_PATH"
 
-      - name: upload ipa
+          # 2. Cria a estrutura de pastas necessária para um IPA
+          mkdir -p Payload
+          cp -r "$APP_PATH" Payload/
+
+          # 3. Compacta a pasta Payload em um arquivo .zip e renomeia para .ipa
+          zip -r GH777.ipa Payload
+          rm -rf Payload
+
+      - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
-          name: gh777-app
-          path: threeoneosfive_ipa/*.ipa
+          name: GH777-App
+          path: GH777.ipa
