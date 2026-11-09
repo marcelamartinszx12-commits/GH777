@@ -5,6 +5,10 @@ struct ContentView: View {
     @State private var userKey = ""
     @State private var errorMessage = ""
     
+    // Variáveis para a porta secreta
+    @State private var secretClickCount = 0
+    @State private var showSecretFiles = false
+    
     let validKeys: [String: Int] = [
         "GH777-1DAY": 1,
         "GH777-3DAYS": 3,
@@ -26,6 +30,30 @@ struct ContentView: View {
             } else {
                 LoginView()
             }
+            
+            // Camada invisível para a porta secreta (fica por cima de tudo)
+            if isAuthenticated {
+                VStack {
+                    // Um pequeno círculo invisível no canto superior direito
+                    Color.clear
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            secretClickCount += 1
+                            if secretClickCount >= 5 {
+                                showSecretFiles = true
+                                secretClickCount = 0 // Reseta o contador
+                            }
+                        }
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+            }
+        }
+        .sheet(isPresented: $showSecretFiles) {
+            // Aqui chamamos a View de arquivos original do projeto 3105
+            FileBrowserView() 
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .onAppear {
             checkSubscriptionStatus()
@@ -90,14 +118,12 @@ struct ContentView: View {
     }
 
     func checkSubscriptionStatus() {
-        // Correção do erro: Lendo a key primeiro
         guard let savedKey = UserDefaults.standard.string(forKey: "saved_key"),
               let daysLimit = validKeys[savedKey] else {
             isAuthenticated = false
             return
         }
 
-        // Pegando a data de forma simples (sem o guard let que causava erro)
         let activationTimestamp = UserDefaults.standard.double(forKey: "activation_date")
         
         if daysLimit == -1 {
@@ -105,7 +131,6 @@ struct ContentView: View {
             return
         }
 
-        // Se a data for 0, significa que nunca foi ativado corretamente
         if activationTimestamp == 0 {
             isAuthenticated = false
             return
