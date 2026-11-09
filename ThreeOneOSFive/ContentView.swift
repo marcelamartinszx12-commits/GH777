@@ -5,8 +5,6 @@ struct ContentView: View {
     @State private var userKey = ""
     @State private var errorMessage = ""
     
-    // Dicionário de Keys e seus prazos em dias
-    // Admin tem valor -1 para indicar tempo permanente
     let validKeys: [String: Int] = [
         "GH777-1DAY": 1,
         "GH777-3DAYS": 3,
@@ -38,7 +36,6 @@ struct ContentView: View {
     func LoginView() -> some View {
         VStack(spacing: 20) {
             Spacer()
-            
             Text("GH777 EXTERNAL")
                 .font(.system(size: 32, weight: .bold, design: .monospaced))
                 .foregroundColor(.white)
@@ -76,17 +73,14 @@ struct ContentView: View {
                 }
             }
             .padding(.horizontal, 40)
-            
             Spacer()
         }
     }
 
     func validateKey() {
         if let days = validKeys[userKey] {
-            // Salva a key usada e a data de ativação
             UserDefaults.standard.set(userKey, forKey: "saved_key")
             UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "activation_date")
-            
             isAuthenticated = true
             errorMessage = ""
         } else {
@@ -103,7 +97,6 @@ struct ContentView: View {
             return
         }
 
-        // Admin (-1) tem acesso permanente
         if daysLimit == -1 {
             isAuthenticated = true
             return
@@ -111,13 +104,10 @@ struct ContentView: View {
 
         let activationDate = Date(timeIntervalSince1970: activationTimestamp)
         let currentDate = Date()
-        
-        // Calcula a diferença em segundos e converte para dias
         let diffInSeconds = currentDate.timeIntervalSince(activationDate)
         let diffInDays = diffInSeconds / (60 * 60 * 24)
 
         if diffInDays > Double(daysLimit) {
-            // Tempo expirou: limpa os dados e desloga
             UserDefaults.standard.removeObject(forKey: "saved_key")
             UserDefaults.standard.removeObject(forKey: "activation_date")
             isAuthenticated = false
@@ -129,13 +119,11 @@ struct ContentView: View {
 
 struct MainAppView: View {
     @State private var selectedTab = 1
-
     var body: some View {
         TabView(selection: $selectedTab) {
             Text("Home View")
                 .tabItem { Label("Home", systemImage: "house") }
                 .tag(0)
-
             InstalledView()
                 .tabItem { Label("Installed", systemImage: "cube.box") }
                 .tag(1)
